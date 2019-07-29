@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # Make sure the script is being executed with superuser privileges.
 if [[ "${UID}" -ne '0' ]]
 then
@@ -7,26 +8,39 @@ then
   exit 1
 fi
 
-# Ask for the  user name (login).
-read -p 'Enter the username to create: ' USER_NAME
+# If the user doesn't supply at least one argument, then give them help.
+NUMBER_OF_PARAMETERS="${#}"
+if [[ "${NUMBER_OF_PARAMETERS}" -lt 1 ]]
+then
+  echo "Usage: ${0} USER_NAME [USER_NAME]..."
+  exit 1
+fi
 
-# Get the real name (content for the description field).
-read -p 'Enter the name of the person or application that will be using this account: ' COMMENT
+# The first parameter is the user name.
+USER_NAME="${1}"
+shift
+# The rest of the parameters are for the account comments.
+COMMENT=""
+while [[ "${#}" -gt 0 ]]
+do
+  COMMENT+="${1} "
+  shift
+done  
 
-# Get the password.
-read -p 'Enter the password to use for the account: ' PASSWORD
+# Generate a password.
+PASSWORD=$(date +%s%N | sha256sum | head -c48)
 
-# Create the user.
+# Create the user with the password.
 useradd -c "${COMMENT}" -m ${USER_NAME}
 
-#  Check to see if the useradd command succeeded.
+# Check to see if the useradd command succeeded.
 if [[ "${?}" -ne '0' ]]
 then
   echo 'Error while adding the user. Exiting script!'
   exit 1
 fi
 
-# Set the password for the user.
+# Set the password.
 echo "Changing password for user ${USER_NAME}."
 echo "${USER_NAME}:${PASSWORD}" | chpasswd
 
